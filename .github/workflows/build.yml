@@ -64,11 +64,26 @@ jobs:
           bun run typecheck
           bun test
 
-      - name: Build and publish the installer
+      - name: Build the installer
         working-directory: apps/electron
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           bun run build:web
           bun run copy:web
-          node node_modules/electron-builder/cli.js --win --x64 --publish always
+          node node_modules/electron-builder/cli.js --win --x64 --publish never
+
+      # Published with gh and tied to this repo. electron-builder would point
+      # the release at the source commit, which does not exist here (422).
+      # All three files are needed: latest.yml is what installed apps read.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${TAG#v}"
+          dist="apps/electron/dist"
+          sha="$(sha256sum "$dist/AudensCut-Setup-$version.exe" | cut -c1-64)"
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target main \
+            --title "AudensCut $version" \
+            --notes "Instalador do AudensCut $version para Windows (64 bits). Quem já tem o AudensCut instalado recebe esta versão sozinho. SHA-256 do instalador: $sha" \
+            "$dist/AudensCut-Setup-$version.exe" \
+            "$dist/AudensCut-Setup-$version.exe.blockmap" \
+            "$dist/latest.yml"
