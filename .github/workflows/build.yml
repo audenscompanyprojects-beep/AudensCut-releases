@@ -66,6 +66,9 @@ jobs:
 
       - name: Build the installer
         working-directory: apps/electron
+        env:
+          # Optional: Freesound API key for the sound library (empty = not set).
+          FREESOUND_API_KEY: ${{ secrets.FREESOUND_API_KEY }}
         run: |
           bun run build:web
           bun run copy:web
